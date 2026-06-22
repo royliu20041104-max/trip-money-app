@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ 智能旅行夾錢 App - 全功能終極相容版</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            background-color: #0f172a; 
+            color: #f1f5f9; 
+            padding: 15px; 
+            margin: 0;
+        }
+        .card { 
+            background-color: #1e293b; 
+            border: 2px solid #334155; 
+            border-radius: 12px; 
+            padding: 16px; 
+            max-width: 450px; 
+            margin: 0 auto 16px auto; 
+            box-sizing: border-box;
+        }
+        h1 { 
+            color: #38bdf8;
+            text-align: center; 
+            margin: 0 0 12px 0; 
+            font-size: 24px; 
+        }
+        h2 { 
+            font-size: 14px; 
+            color: #94a3b8; 
+            margin: 0 0 12px 0; 
+            padding-bottom: 6px; 
+            border-bottom: 1px solid #334155;
+        }
+        .row { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 10px; 
+        }
+        input, select { 
+            padding: 10px; 
+            border: 2px solid #475569; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            background-color: #0f172a; 
+            color: #ffffff; 
+            box-sizing: border-box;
+            width: 100%;
+        }
+        button { 
+            color: #ffffff; 
+            border: none; 
+            padding: 10px 16px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 14px;
+        }
+        .tag-box { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            margin-top: 8px; 
+        }
+        .tag { 
+            background-color: #0f172a; 
+            color: #cbd5e1; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 13px; 
+            cursor: pointer; 
+            border: 1px solid #475569; 
+            display: inline-flex; 
+            align-items: center; 
+        }
+        .tag.active { 
+            background-color: #6d28d9; 
+            color: #ffffff; 
+            border-color: #a78bfa; 
+        }
+        .tag.active-group { 
+            background-color: #047857; 
+            color: #ffffff; 
+            border-color: #34d399; 
+        }
+        .del-btn { 
+            background: none; 
+            color: #64748b; 
+            border: none; 
+            padding: 0 0 0 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .group-tag { 
+            background-color: rgba(249, 115, 22, 0.2); 
+            color: #ff9d43; 
+            border: 1px solid #f97316; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 4px; 
+            margin: 0 6px 6px 0; 
+        }
+        .list-box { 
+            background-color: #0f172a; 
+            border: 1px solid #334155; 
+            border-radius: 8px; 
+            padding: 0 12px; 
+            list-style: none; 
+            margin: 0; 
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .list-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 0; 
+            border-bottom: 1px solid #1e293b; 
+        }
+        .list-item:last-child { border-bottom: none; }
+        .result-area { 
+            background-color: rgba(16, 185, 129, 0.15); 
+            border: 1px solid #10b981; 
+            color: #34d399; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            line-height: 1.6;
+        }
+        .status-bar { 
+            text-align: center; 
+            font-size: 12px; 
+            padding: 8px; 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            border: 1px solid #d97706; 
+            background-color: rgba(217, 119, 6, 0.15); 
+            color: #fbbf24; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>✈️ 智能旅行夾錢 App</h1>
+        <div id="rateStatus" class="status-bar">💡 目前正使用離線預設匯率 (記帳免連網)</div>
+
+        <div>
+            <h2>📇 1. 常用朋友名冊 (點擊名字可加入/退出旅程)</h2>
+            <div class="row">
+                <input type="text" id="savedMemberName" placeholder="輸入常用朋友名 (如: Tom)">
+                <button type="button" id="btnSaveToBook" style="background-color: #ec4899; width: 90px;">儲存</button>
+            </div>
+            <div class="tag-box" id="bookContainer"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <h2>👥 2. 今次出發旅伴及家庭分組</h2>
+            <div class="row">
+                <input type="text" id="newMemberName" placeholder="臨時加人？在此輸入名字">
+                <button type="button" id="btnAddMember" style="background-color: #eab308; color: #0f172a; width: 90px;">加人</button>
+            </div>
+            
+            <div style="background-color: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #334155;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <strong style="color: #94a3b8; font-size:12px;">👪 家庭合併設定：</strong>
+                    <button type="button" id="groupBtn" style="font-size:12px; padding:4px 8px; background-color:#4f46e5;">自由配對分組</button>
+                </div>
+                <div id="groupHint" style="color:#a5b4fc; font-weight:bold; display:none; margin-bottom:6px; font-size:11px;">
+                    💡 請點擊下方旅伴名字，選出一組家庭後，再按一次上面按鈕儲存！
+                </div>
+                <div id="familyList" style="display:flex; flex-wrap:wrap;"></div>
+            </div>
+
+            <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:6px;">📢 今次去旅行嘅人員名單：</div>
+            <div class="tag-box" id="memberContainer"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <h2>📱 3. 結算目標貨幣</h2>
+            <select id="baseCurrencySelect">
+                <option value="HKD" selected>港幣 (HKD)</option>
+                <option value="USD">美金 (USD)</option>
+                <option value="JPY">日圓 (JPY)</option>
+                <option value="EUR">歐元 (EUR)</option>
+                <option value="CNY">人民幣 (CNY)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <h2>💰 4. 新增開支項目</h2>
+            <div class="row">
+                <input type="text" id="itemName" placeholder="項目名稱 (例如：食燒肉、酒店)">
+                <select id="expenseCurrencySelect" style="width: 140px;">
+                    <option value="THB" selected>泰銖 (THB)</option>
+                    <option value="JPY">日圓 (JPY)</option>
+                    <option value="TWD">台幣 (TWD)</option>
+                    <option value="KRW">韓圓 (KRW)</option>
+                    <option value="HKD">港幣 (HKD)</option>
+                    <option value="CNY">人民幣 (CNY)</option>
+                    <option value="MOP">澳門幣 (MOP)</option>
+                    <option value="USD">美金 (USD)</option>
+                    <option value="EUR">歐元 (EUR)</option>
+                    <option value="GBP">英鎊 (GBP)</option>
+                    <option value="AUD">澳幣 (AUD)</option>
+                    <option value="CAD">加幣 (CAD)</option>
+                    <option value="SGD">新幣 (SGD)</option>
+                    <option value="MYR">馬幣 (MYR)</option>
+                    <option value="CHF">瑞士法郎 (CHF)</option>
+                    <option value="NZD">紐西蘭元 (NZD)</option>
+                    <option value="VND">越南盾 (VND)</option>
+                    <option value="IDR">印尼盾 (IDR)</option>
+                    <option value="PHP">菲律賓披索 (PHP)</option>
+                    <option value="INR">印度盧比 (INR)</option>
+                    <option value="AED">阿聯酋迪拉姆 (AED)</option>
+                    <option value="TRY">土耳其里拉 (TRY)</option>
+                </select>
+            </div>
+            <div class="row">
+                <input type="number" id="itemAmount" placeholder="0.00 外幣金額">
+            </div>
+            <div class="row" style="align-items:center;">
+                <span style="font-size:13px; width:110px; color:#94a3b8;">邊個出面俾錢？</span>
+                <select id="payerSelect"></select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <span style="font-size:13px; display:block; margin-bottom:6px; color:#94a3b8;">邊個一齊夾？</span>
+                <div id="sharerCheckboxes" style="background-color:#0f172a; border:1px solid #334155; padding:10px; border-radius:8px; font-size:13px; display:flex; flex-wrap:wrap; gap:10px;"></div>
+            </div>
+            <button type="button" id="submitExpenseBtn" style="width:100%; background-color: #6366f1; padding:12px;">記低呢筆開支</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <h2>
+                <span>📋 5. 開支歷史紀錄</span>
+                <span id="totalPool" style="background-color:#0f172a; color:#38bdf8; padding:2px 8px; border-radius:6px; font-size:12px; float:right;">總支出: 0</span>
+            </h2>
+            <div style="clear:both; height:8px;"></div>
+            <ul id="expenseList" class="list-box"></ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h2 style="margin:0; border:none; padding:0;">📊 6. 終極結算 (家庭已合併)</h2>
+                <button type="button" id="fetchRateBtn" style="font-size:11px; padding:4px 10px; background-color: #10b981;">📈 獲取網絡匯率</button>
+            </div>
+            <div id="settlementResult" class="result-area">請先在上方點選人員並輸入開支。</div>
+        </div>
+    </div>
+
+    <div class="card" style="background:transparent; border:none; padding:0; display:flex; gap:12px;">
+        <button type="button" id="btnClearCurrent" style="background-color: #1e293b; color:#f59e0b; border:1px solid #d97706; flex:1; font-size:12px;">🧹 僅清空今次開支</button>
+        <button type="button" id="btnClearAll" style="background-color: #1e293b; color:#f43f5e; border:1px solid #e11d48; font-size:12px;">🗑️ 重設全App</button>
+    </div>
+
+    <script>
+        var memberBook = ['Tom', 'Mary', 'Bob', 'Alice'];
+        var members = [];
+        var families = [];
+        var expenses = [];
+        var baseCurrency = 'HKD';
+        var exchangeRates = { "HKD": 1.0, "USD": 7.8, "JPY": 0.051, "THB": 0.21, "TWD": 0.24, "KRW": 0.0056, "EUR": 8.4, "CNY": 1.08, "GBP": 10.1, "AUD": 5.1, "MOP": 0.97, "CAD": 5.7, "SGD": 5.8, "MYR": 1.65 };
+        var isGroupMode = false;
+        var selectedForGroup = [];
+        var editIndex = -1;
+
+        window.onload = function() {
+            try {
+                if(localStorage.getItem('sf7_book')) memberBook = JSON.parse(localStorage.getItem('sf7_book'));
+                if(localStorage.getItem('sf7_members')) members = JSON.parse(localStorage.getItem('sf7_members'));
+                if(localStorage.getItem('sf7_families')) families = JSON.parse(localStorage.getItem('sf7_families'));
+                if(localStorage.getItem('sf7_expenses')) expenses = JSON.parse(localStorage.getItem('sf7_expenses'));
+                if(localStorage.getItem('sf7_base')) baseCurrency = localStorage.getItem('sf7_base');
+            } catch(e) {}
+
+            document.getElementById('baseCurrencySelect').value = baseCurrency;
+            document.getElementById('btnSaveToBook').onclick = saveToBook;
+            document.getElementById('btnAddMember').onclick = addMember;
+            document.getElementById('groupBtn').onclick = toggleGroupMode;
+            document.getElementById('submitExpenseBtn').onclick = addExpense;
+            document.getElementById('fetchRateBtn').onclick = fetchLiveRates;
+            document.getElementById('btnClearCurrent').onclick = clearCurrentExpenses;
+            document.getElementById('btnClearAll').onclick = clearAllData;
+            document.getElementById('baseCurrencySelect').onchange = changeBaseCurrency;
+
+            renderBookArea();
+            renderMemberArea();
+            updateUI();
+        };
+
+        function fetchLiveRates() {
+            var btn = document.getElementById('fetchRateBtn');
+            var statusEl = document.getElementById('rateStatus');
+            btn.innerText = "⏳ 獲取中...";
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'https://open.er-api.com/v6/latest/HKD', true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            if (data && data.rates) {
+                                for (var cur in exchangeRates) {
+                                    if (data.rates[cur]) exchangeRates[cur] = 1 / data.rates[cur];
+                                }
+                                exchangeRates['HKD'] = 1.0;
+                                statusEl.innerText = "🟢 已成功同步最新實時匯率數據";
+                                btn.innerText = "✅ 更新成功";
+                                updateUI();
+                            }
+                        } catch(e) { btn.innerText = "📈 獲取網絡匯率"; }
+                    } else {
+                        alert('無法連結網絡，已自動使用離線預設匯率！');
+                        btn.innerText = "📈 獲取網絡匯率";
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function changeBaseCurrency() {
+            baseCurrency = document.getElementById('baseCurrencySelect').value;
+            try { localStorage.setItem('sf7_base', baseCurrency); } catch(e){}
+            updateUI();
+        }
+
+        function saveToBook() {
+            var input = document.getElementById('savedMemberName');
+            var name = input.value.trim();
+            if (!name) return alert('請輸入朋友名字！');
+            if (memberBook.indexOf(name) > -1) return alert('名字已存在！');
+            memberBook.push(name);
+            saveData();
+            input.value = '';
+            renderBookArea();
+        }
+
+        function toggleTravelStatus(name) {
+            var mIdx = members.indexOf(name);
+            if (mIdx > -1) {
+                members.splice(mIdx, 1);
+                for(var i=0; i<families.length; i++) {
+                    families[i] = families[i].filter(function(m) { return m !== name; });
+                }
+                families = families.filter(function(f) { return f.length > 0; });
+            } else {
+                members.push(name);
+            }
+            saveData();
+            renderBookArea();
+            renderMemberArea();
+            updateUI();
+        }
+
+        function renderBookArea() {
+            var container = document.getElementById('bookContainer');
+            container.innerHTML = '';
+            for(var i=0; i<memberBook.length; i++) {
+                (function(name){
+                    var isActive = members.indexOf(name) > -1;
+                    var tag = document.createElement('div');
+                    tag.className = 'tag' + (isActive ? ' active' : '');
+                    tag.innerText = (isActive ? '✅ ' : '') + name;
+                    tag.onclick = function() { toggleTravelStatus(name); };
+                    
+                    var del = document.createElement('button');
+                    del.className = 'del-btn';
+                    del.innerText = '×';
+                    del.onclick = function(e) {
+                        if (e.stopPropagation) e.stopPropagation(); else e.cancelBubble = true;
+                        memberBook = memberBook.filter(function(b) { return b !== name; });
+                        members = members.filter(function(m) { return m !== name; });
+                        saveData();
+                        renderBookArea();
+                        renderMemberArea();
+                        updateUI();
+                    };
+                    
+                    tag.appendChild(del);
+                    container.appendChild(tag);
+                })(memberBook[i]);
+            }
+        }
+
+        function addMember() {
+            var input = document.getElementById('newMemberName');
+            var name = input.value.trim();
+            if (!name) return alert('請輸入名字！');
+            if (members.indexOf(name) > -1) return alert('名字已存在！');
+            members.push(name);
+            if (memberBook.indexOf(name) === -1) memberBook.push(name);
+            saveData();
+            input.value = '';
+            renderBookArea();
+            renderMemberArea();
+            updateUI();
+        }
+
+        function toggleGroupMode() {
+            var btn = document.getElementById('groupBtn');
+            var hint = document.getElementById('groupHint');
+            if (!isGroupMode) {
+                isGroupMode = true;
+                selectedForGroup = [];
+                btn.innerText = '💾 儲存此組';
+                hint.style.display = 'block';
+            } else {
+                if (selectedForGroup.length >= 2) {
+                    for(var i=0; i<families.length; i++) {
+                        families[i] = families[i].filter(function(m) { return selectedForGroup.indexOf(m) === -1; });
+                    }
+                    families = families.filter(function(f) { return f.length > 0; });
+                    families.push([].concat(selectedForGroup));
+                    saveData();
+                }
+                isGroupMode = false;
+                btn.innerText = '自由配對分組';
+                hint.style.display = 'none';
+            }
+            renderMemberArea();
+        }
+
+        function handleMemberClick(name) {
+            if (!isGroupMode) return;
+            var idx = selectedForGroup.indexOf(name);
+            if (idx > -1) selectedForGroup.splice(idx, 1);
+            else selectedForGroup.push(name);
+            renderMemberArea();
+        }
+
+        function removeFamilyGroup(idx) {
+            families.splice(idx, 1);
+            saveData();
+            renderMemberArea();
+            updateUI();
+        }
+
+        function renderMemberArea() {
+            var container = document.getElementById('memberContainer');
+            container.innerHTML = '';
+            
+            for(var i=0; i<members.length; i++) {
+                (function(m){
+                    var famIdx = -1;
+                    for(var j=0; j<families.length; j++) {
+                        if(families[j].indexOf(m) > -1) { famIdx = j; break; }
+                    }
+                    var isSel = selectedForGroup.indexOf(m) > -1;
+                    var tag = document.createElement('div');
+                    tag.className = 'tag';
+                    
+                    if (isSel) tag.className = 'tag active';
+                    else if (famIdx > -1) tag.className = 'tag active-group';
+
+                    tag.innerText = (famIdx > -1 ? '[組'+(famIdx+1)+'] ' : '') + m;
+                    tag.onclick = function() { handleMemberClick(m); };
+                    container.appendChild(tag);
+                })(members[i]);
+            }
+
+            var famListEl = document.getElementById('familyList');
+            famListEl.innerHTML = '';
+            for(var k=0; k<families.length; k++) {
+                (function(idx){
+                    var span = document.createElement('span');
+                    span.className = 'group-tag';
+                    span.innerText = '👨‍👩‍👧 組' + (idx+1) + ': ' + families[idx].join('+') + ' ';
+                    var del = document.createElement('button');
+                    del.innerText = '×';
+                    del.className = 'del-btn';
+                    del.style.color = '#ff9d43';
+                    del.onclick = function() { removeFamilyGroup(idx); };
+                    span.appendChild(del);
+                    famListEl.appendChild(span);
+                })(k);
+            }
+
+            var payerSelect = document.getElementById('payerSelect');
+            payerSelect.innerHTML = '';
+            for(var a=0; a<members.length; a++) {
+                payerSelect.innerHTML += '<option value="'+members[a]+'">'+members[a]+'</option>';
+            }
+
+            var sharerCheckboxes = document.getElementById('sharerCheckboxes');
+            sharerCheckboxes.innerHTML = '';
+            for(var b=0; b<members.length; b++) {
+                sharerCheckboxes.innerHTML += '<label style="display:inline-flex; align-items:center; gap:6px; margin-right:10px;"><input type="checkbox" value="'+members[b]+'" class="s-box" checked> '+members[b]+'</label>';
+            }
+        }
+
+        function addExpense() {
+            var name = document.getElementById('itemName').value.trim() || '未命名開支';
+            var amount = parseFloat(document.getElementById('itemAmount').value);
+            var currency = document.getElementById('expenseCurrencySelect').value;
+            var payer = document.getElementById('payerSelect').value;
+            var sharers = [];
+            
+            var cbs = document.querySelectorAll('.s-box');
+            for(var i=0; i<cbs.length; i++) {
+                if(cbs[i].checked) sharers.push(cbs[i].value);
+            }
+
+            if (members.length === 0) return alert('請先選定旅伴！');
+            if (isNaN(amount) || amount <= 0) return alert('請輸入有效金額！');
+            if (!payer) return alert('請選擇付款人！');
+            if (sharers.length === 0) return alert('最少要有一人分攤！');
+
+            var amountInHKD = amount * (exchangeRates[currency] || 1.0);
+            var amountInBase = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
+
+            if (editIndex > -1) {
+                expenses[editIndex] = { name: name, amount: amount, currency: currency, amountInBase: amountInBase, payer: payer, sharers: sharers };
+                editIndex = -1;
+                document.getElementById('submitExpenseBtn').innerText = "記低呢筆開支";
+            } else {
+                expenses.push({ name: name, amount: amount, currency: currency, amountInBase: amountInBase, payer: payer, sharers: sharers });
+            }
+
+            saveData();
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemAmount').value = '';
+            updateUI();
+        }
+
+        function startEditExpense(idx) {
+            editIndex = idx;
+            var exp = expenses[idx];
+            document.getElementById('itemName').value = exp.name;
+            document.getElementById('itemAmount').value = exp.amount;
+            document.getElementById('expenseCurrencySelect').value = exp.currency;
+            document.getElementById('payerSelect').value = exp.payer;
+            
+            var cbs = document.querySelectorAll('.s-box');
+            for(var i=0; i<cbs.length; i++) {
+                cbs[i].checked = exp.sharers.indexOf(cbs[i].value) > -1;
+            }
+            document.getElementById('submitExpenseBtn').innerText = "💾 儲存修改內容";
+        }
+
+        function deleteExpense(idx) {
+            expenses.splice(idx, 1);
+            saveData();
+            updateUI();
+        }
+
+        function updateUI() {
+            var list = document.getElementById('expenseList');
+            list.innerHTML = '';
+            var total = 0;
+
+            if(expenses.length === 0) {
+                list.innerHTML = '<li style="text-align:center;color:#475569;padding:15px 0;">未有開支紀錄</li>';
+            } else {
+                for(var i=0; i<expenses.length; i++) {
+                    (function(idx){
+                        var exp = expenses[idx];
+                        var amountInHKD = exp.amount * (exchangeRates[exp.currency] || 1.0);
+                        exp.amountInBase = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
+                        total += exp.amountInBase;
+
+                        var li = document.createElement('li');
+                        li.className = 'list-item';
+                        li.innerHTML = '<div style="flex:1;"><strong style="font-size:14px; color:#f1f5f9;">'+exp.name+'</strong><br><small style="color:#94a3b8;">由 '+exp.payer+' 付款，'+exp.sharers.join(',')+' 夾</small></div><div style="text-align:right; min-width:110px;"><span style="font-weight:700; color:#38bdf8; font-size:15px;">'+exp.amount+' '+exp.currency+'</span><br><small style="color:#64748b;">(~'+exp.amountInBase.toFixed(1)+' '+baseCurrency+')</small><div style="margin-top:4px;"><button type="button" class="edit-action" style="font-size:10px; padding:2px 6px; background-color:#334155; border-radius:4px; margin-right:4px;">改</button><button type="button" class="del-action" style="font-size:10px; padding:2px 6px; background-color:#334155; border-radius:4px; color:#f43f5e;">刪</button></div></div>';
+                        
+                        li.querySelector('.edit-action').onclick = function() { startEditExpense(idx); };
+                        li.querySelector('.del-action').onclick = function() { deleteExpense(idx); };
+                        list.appendChild(li);
+                    })(i);
+                }
+            }
+            document.getElementById('totalPool').innerText = "總支出: " + total.toFixed(1) + " " + baseCurrency;
+
+            var bal = {};
+            for(var c=0; c<members.length; c++) bal[members[c]] = 0;
+            for(var d=0; d<expenses.length; d++) {
+                var expObj = expenses[d];
+                if(bal[expObj.payer] !== undefined) bal[expObj.payer] += expObj.amountInBase;
+                var share = expObj.amountInBase / expObj.sharers.length;
+                for(var e=0; e<expObj.sharers.length; e++) {
+                    var sName = expObj.sharers[e];
+                    if(bal[sName] !== undefined) bal[sName] -= share;
+                }
+            }
+
+            var finalBal = {};
+            for(var f=0; f<members.length; f++) finalBal[members[f]] = 0;
+            for(var g=0; g<members.length; g++) {
+                var mName = members[g];
+                var fGroup = null;
+                for(var h=0; h<families.length; h++) {
+                    if(families[h].indexOf(mName) > -1) { fGroup = families[h]; break; }
+                }
+                var leader = fGroup ? fGroup[0] : mName;
+                finalBal[leader] += bal[mName];
+            }
+
+            var p = [];
+            for(var k in finalBal) {
+                if(members.indexOf(k) > -1) p.push({ name: k, amount: finalBal[k] });
+            }
+            
+            var sList = [];
+            var maxLoop = 100; 
+            while(maxLoop > 0) {
+                maxLoop--;
+                p.sort(function(a,b){ return a.amount - b.amount; });
+                var debtor = p[0];
+                var creditor = p[p.length - 1];
+                if(!debtor || !creditor || Math.abs(debtor.amount) < 0.1 || Math.abs(creditor.amount) < 0.1) break;
+                var amt = Math.min(Math.abs(debtor.amount), creditor.amount);
+                
+                var dFam = null; for(var i=0; i<families.length; i++) { if(families[i].indexOf(debtor.name) > -1) dFam = families[i]; }
+                var cFam = null; for(var j=0; j<families.length; j++) { if(families[j].indexOf(creditor.name) > -1) cFam = families[j]; }
+
+                sList.push("💵 <strong>" + (dFam ? debtor.name+' 一家':debtor.name) + "</strong> 俾返 <strong>" + amt.toFixed(1) + " " + baseCurrency + "</strong> 俾 <strong>" + (cFam ? creditor.name+' 一家':creditor.name) + "</strong>");
+                debtor.amount += amt;
+                creditor.amount -= amt;
+            }
+
+            var res = document.getElementById('settlementResult');
+            if(members.length===0) res.innerHTML="請先在上方點選成員。";
+            else if(expenses.length===0) res.innerHTML="請輸入開支項目以計算結果。";
+            else if(sList.length===0) res.innerHTML="🎉 互不相欠，全體清數！";
+            else res.innerHTML = sList.join('<br>');
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('sf7_book', JSON.stringify(memberBook));
+                localStorage.setItem('sf7_members', JSON.stringify(members));
+                localStorage.setItem('sf7_families', JSON.stringify(families));
+                localStorage.setItem('sf7_expenses', JSON.stringify(expenses));
+            } catch(e){}
+        }
+
+        function clearCurrentExpenses() {
+            if(confirm('確定要清空今次所有開支歷史與分組組合嗎？')) {
+                expenses = []; families = []; members = []; saveData();
+                renderBookArea(); renderMemberArea(); updateUI();
+            }
+        }
+
+        function clearAllData() {
+            if(confirm('⚠️ 警告：這將會連同常用名冊在內全部徹底重設，確定嗎？')) {
+                try{localStorage.clear();}catch(e){}
+                memberBook = ['Tom', 'Mary', 'Bob', 'Alice'];
+                members = []; families = []; expenses = []; baseCurrency = 'HKD';
+                saveData(); renderBookArea(); renderMemberArea(); updateUI();
+            }
+        }
+    </script>
+</body>
+</html>
