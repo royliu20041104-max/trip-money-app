@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✈️ 智能旅行夾錢 App - 全功能終極相容版</title>
-    <style>
+    <title>✈️ 智能旅行夾錢 App - 多國貨幣終極相容版</title>
+	
+	<div class="card">
+    <h2>📂 活動管理 (切換/新增)</h2>
+    <div class="row">
+        <select id="activitySelect"></select>
+        <button type="button" id="btnAddActivity" style="background-color: #3b82f6; width: 80px;">新增</button>
+    </div>
+    <button type="button" id="btnDeleteActivity" style="background-color: #9f1239; width: 100%; margin-top: 10px;">刪除當前活動</button>
+</div>
+    <style>		
         body { 
             font-family: sans-serif; 
             background-color: #0f172a; 
@@ -160,9 +168,7 @@
             </div>
             <div class="tag-box" id="bookContainer"></div>
         </div>
-    </div>
 
-    <div class="card">
         <div>
             <h2>👥 2. 今次出發旅伴及家庭分組</h2>
             <div class="row">
@@ -186,24 +192,13 @@
         </div>
     </div>
 
-    <div class="card">
-        <div>
-            <h2>📱 3. 結算目標貨幣</h2>
-            <select id="baseCurrencySelect">
-                <option value="HKD" selected>港幣 (HKD)</option>
-                <option value="USD">美金 (USD)</option>
-                <option value="JPY">日圓 (JPY)</option>
-                <option value="EUR">歐元 (EUR)</option>
-                <option value="CNY">人民幣 (CNY)</option>
-            </select>
-        </div>
-    </div>
+
 
     <div class="card">
         <div>
-            <h2>💰 4. 新增開支項目</h2>
+            <h2>💰 3. 新增開支項目</h2>
             <div class="row">
-                <input type="text" id="itemName" placeholder="項目名稱 (例如：食燒肉、酒店)">
+                <input type="text" id="itemName" placeholder="項目名稱 (例如：食燒肉、車費、酒店)">
                 <select id="expenseCurrencySelect" style="width: 140px;">
                     <option value="THB" selected>泰銖 (THB)</option>
                     <option value="JPY">日圓 (JPY)</option>
@@ -245,6 +240,19 @@
     </div>
 
     <div class="card">
+	<div>
+            <h2>📱 4. 結算目標貨幣</h2>
+            <select id="baseCurrencySelect">
+                <option value="HKD" selected>港幣 (HKD)</option>
+                <option value="USD">美金 (USD)</option>
+                <option value="JPY">日圓 (JPY)</option>
+                <option value="EUR">歐元 (EUR)</option>
+                <option value="CNY">人民幣 (CNY)</option>
+                <option value="GBP">英鎊 (GBP)</option>
+                <option value="AUD">澳幣 (AUD)</option>
+                <option value="TWD">台幣 (TWD)</option>
+            </select>
+        </div>
         <div>
             <h2>
                 <span>📋 5. 開支歷史紀錄</span>
@@ -271,70 +279,109 @@
     </div>
 
     <script>
-        var memberBook = ['Tom', 'Mary', 'Bob', 'Alice'];
-        var members = [];
-        var families = [];
-        var expenses = [];
-        var baseCurrency = 'HKD';
-        var exchangeRates = { "HKD": 1.0, "USD": 7.8, "JPY": 0.051, "THB": 0.21, "TWD": 0.24, "KRW": 0.0056, "EUR": 8.4, "CNY": 1.08, "GBP": 10.1, "AUD": 5.1, "MOP": 0.97, "CAD": 5.7, "SGD": 5.8, "MYR": 1.65 };
+		var memberBook = JSON.parse(localStorage.getItem('sf7_book')) || ['Tom', 'Mary', 'Bob', 'Alice'];
+
+		// 初始化活動資料結構
+			var activities = JSON.parse(localStorage.getItem('sf7_activities')) || [{
+			name: '預設旅程',members: [], families: [], expenses: [], baseCurrency: 'HKD'
+				}];
+			var currentIdx = parseInt(localStorage.getItem('sf7_currentIdx')) || 0;
+		// 將當前活動的資料解開到全域變數，維持原本 App 邏輯運作
+			var members, families, expenses, baseCurrency;
+        function syncGlobals() {
+			var act = activities[currentIdx];
+			members = act.members;
+			families = act.families;
+			expenses = act.expenses;
+			baseCurrency = act.baseCurrency;
+		}
+		syncGlobals();
+        // 擴展 22 國預設基礎匯率數據 (相對於HKD)
+        var exchangeRates = { 
+            "HKD": 1.0, "USD": 7.8, "JPY": 0.051, "THB": 0.21, "TWD": 0.24, "KRW": 0.0056, 
+            "EUR": 8.4, "CNY": 1.08, "GBP": 10.1, "AUD": 5.1, "MOP": 0.97, "CAD": 5.7, 
+            "SGD": 5.8, "MYR": 1.65, "CHF": 8.75, "NZD": 4.65, "VND": 0.00031, "IDR": 0.00049,
+            "PHP": 0.135, "INR": 0.093, "AED": 2.12, "TRY": 0.24
+        };
         var isGroupMode = false;
         var selectedForGroup = [];
         var editIndex = -1;
 
-        window.onload = function() {
-            try {
-                if(localStorage.getItem('sf7_book')) memberBook = JSON.parse(localStorage.getItem('sf7_book'));
-                if(localStorage.getItem('sf7_members')) members = JSON.parse(localStorage.getItem('sf7_members'));
-                if(localStorage.getItem('sf7_families')) families = JSON.parse(localStorage.getItem('sf7_families'));
-                if(localStorage.getItem('sf7_expenses')) expenses = JSON.parse(localStorage.getItem('sf7_expenses'));
-                if(localStorage.getItem('sf7_base')) baseCurrency = localStorage.getItem('sf7_base');
-            } catch(e) {}
+       window.onload = function() {
+			// 綁定 UI 事件
+			document.getElementById('btnSaveToBook').onclick = saveToBook;
+			document.getElementById('btnAddMember').onclick = addMember;
+			document.getElementById('groupBtn').onclick = toggleGroupMode;
+			document.getElementById('submitExpenseBtn').onclick = addExpense;
+			document.getElementById('fetchRateBtn').onclick = fetchLiveRates;
+			document.getElementById('btnClearCurrent').onclick = clearCurrentExpenses;
+			document.getElementById('btnClearAll').onclick = clearAllData;
+			document.getElementById('baseCurrencySelect').onchange = changeBaseCurrency;
+    
+    // 活動管理事件
+			document.getElementById('btnAddActivity').onclick = addActivity;
+			document.getElementById('activitySelect').onchange = function(e) { switchActivity(parseInt(e.target.value)); };
+			document.getElementById('btnDeleteActivity').onclick = deleteActivity;
 
-            document.getElementById('baseCurrencySelect').value = baseCurrency;
-            document.getElementById('btnSaveToBook').onclick = saveToBook;
-            document.getElementById('btnAddMember').onclick = addMember;
-            document.getElementById('groupBtn').onclick = toggleGroupMode;
-            document.getElementById('submitExpenseBtn').onclick = addExpense;
-            document.getElementById('fetchRateBtn').onclick = fetchLiveRates;
-            document.getElementById('btnClearCurrent').onclick = clearCurrentExpenses;
-            document.getElementById('btnClearAll').onclick = clearAllData;
-            document.getElementById('baseCurrencySelect').onchange = changeBaseCurrency;
+			renderActivitySelect();
+			renderBookArea();
+			renderMemberArea();
+			updateUI();
+		};
+		
+		function renderActivitySelect() {
+			var sel = document.getElementById('activitySelect');
+			sel.innerHTML = '';
+			activities.forEach(function(act, i) {
+			var opt = document.createElement('option');
+			opt.value = i;
+			opt.innerText = act.name;
+			if (i === currentIdx) opt.selected = true;
+			sel.appendChild(opt);
+		});
+		}	
 
-            renderBookArea();
-            renderMemberArea();
-            updateUI();
-        };
 
-        function fetchLiveRates() {
-            var btn = document.getElementById('fetchRateBtn');
-            var statusEl = document.getElementById('rateStatus');
-            btn.innerText = "⏳ 獲取中...";
+       function fetchLiveRates() {
+    var btn = document.getElementById('fetchRateBtn');
+    var statusEl = document.getElementById('rateStatus');
+    
+    // 1. 重置按鈕狀態，確保隨時可按
+    btn.innerText = "⏳ 獲取中...";
+    btn.disabled = true; // 點擊時禁用防止重複觸發
+    
+    var xhr = new XMLHttpRequest();
+    // 使用 cache: false 的概念 (透過時間戳記避免瀏覽器快取舊數據)
+    var timestamp = new Date().getTime();
+    xhr.open('GET', 'https://open.er-api.com/v6/latest/HKD?t=' + timestamp, true);
+    
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            // 2. 完成後恢復按鈕
+            btn.disabled = false;
+            btn.innerText = "📈 獲取網絡匯率";
             
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://open.er-api.com/v6/latest/HKD', true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        try {
-                            var data = JSON.parse(xhr.responseText);
-                            if (data && data.rates) {
-                                for (var cur in exchangeRates) {
-                                    if (data.rates[cur]) exchangeRates[cur] = 1 / data.rates[cur];
-                                }
-                                exchangeRates['HKD'] = 1.0;
-                                statusEl.innerText = "🟢 已成功同步最新實時匯率數據";
-                                btn.innerText = "✅ 更新成功";
-                                updateUI();
-                            }
-                        } catch(e) { btn.innerText = "📈 獲取網絡匯率"; }
-                    } else {
-                        alert('無法連結網絡，已自動使用離線預設匯率！');
-                        btn.innerText = "📈 獲取網絡匯率";
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data && data.rates) {
+                        for (var cur in exchangeRates) {
+                            if (data.rates[cur]) exchangeRates[cur] = 1 / data.rates[cur];
+                        }
+                        exchangeRates['HKD'] = 1.0;
+                        statusEl.innerText = "🟢 " + new Date().toLocaleTimeString() + " 已更新最新實時匯率";
+                        updateUI(); // 重新計算所有開支
                     }
+                } catch(e) { 
+                    alert('匯率解析失敗');
                 }
-            };
-            xhr.send();
+            } else {
+                alert('無法連結網絡，請稍後再試！');
+            }
         }
+    };
+    xhr.send();
+}
 
         function changeBaseCurrency() {
             baseCurrency = document.getElementById('baseCurrencySelect').value;
@@ -643,13 +690,9 @@
         }
 
         function saveData() {
-            try {
-                localStorage.setItem('sf7_book', JSON.stringify(memberBook));
-                localStorage.setItem('sf7_members', JSON.stringify(members));
-                localStorage.setItem('sf7_families', JSON.stringify(families));
-                localStorage.setItem('sf7_expenses', JSON.stringify(expenses));
-            } catch(e){}
-        }
+				activities[currentIdx] = { name: activities[currentIdx].name, members: members, families: families, expenses: expenses, baseCurrency: baseCurrency };
+				saveAll();
+		}
 
         function clearCurrentExpenses() {
             if(confirm('確定要清空今次所有開支歷史與分組組合嗎？')) {
@@ -666,6 +709,74 @@
                 saveData(); renderBookArea(); renderMemberArea(); updateUI();
             }
         }
+		
+		
+		// 變數初始化
+var activities = JSON.parse(localStorage.getItem('sf7_activities')) || [{
+    name: '預設旅程',
+    members: [], families: [], expenses: [], baseCurrency: 'HKD'
+}];
+var currentIdx = parseInt(localStorage.getItem('sf7_currentIdx')) || 0;
+
+// 核心功能：切換活動
+function switchActivity(idx) {
+    currentIdx = idx;
+    localStorage.setItem('sf7_currentIdx', currentIdx);
+    syncGlobals();
+    document.getElementById('baseCurrencySelect').value = baseCurrency;
+    renderActivitySelect();
+    renderBookArea();
+    renderMemberArea();
+    updateUI();
+}
+
+// 核心功能：新增活動
+function addActivity() {
+    var name = prompt("請輸入新活動名稱：");
+    if (!name || name.trim() === "") return;
+	// 2. 檢查是否有重複名稱 (不區分大小寫且去除前後空格)
+    var isDuplicate = activities.some(function(act) {
+        return act.name.trim().toLowerCase() === name.trim().toLowerCase();
+    });
+    
+    if (isDuplicate) {
+        alert("⚠️ 該活動名稱已存在，請使用其他名稱！");
+        return; // 中斷執行，不新增
+    }
+    activities.push({ name: name, members: [], families: [], expenses: [], baseCurrency: 'HKD' });
+    saveAll();
+    switchActivity(activities.length - 1);
+}
+
+// 核心功能：刪除活動
+function deleteActivity() {
+    // 檢查是否有活動可刪除
+    if (activities.length <= 1) {
+        return alert("⚠️ 最少要保留一個活動，不能全部刪除！");
+		}
+    
+    // 確認提示
+    if (!confirm("⚠️ 確定要刪除當前活動「" + activities[currentIdx].name + "」嗎？此操作無法復原。")) {
+        return;
+    }
+
+    // 執行刪除
+    activities.splice(currentIdx, 1);
+    
+    // 切換回第一個活動 (索引 0)
+    switchActivity(0);
+    
+    // 強制更新儲存
+    saveAll();
+}
+
+
+
+// 更新儲存邏輯
+function saveAll() {
+    localStorage.setItem('sf7_activities', JSON.stringify(activities));
+    localStorage.setItem('sf7_book', JSON.stringify(memberBook));
+}
     </script>
 </body>
 </html>
