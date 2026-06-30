@@ -121,7 +121,7 @@
             padding: 0 12px; 
             list-style: none; 
             margin: 0; 
-            max-height: 200px;
+            max-height: 800px;
             overflow-y: auto;
         }
         .list-item { 
@@ -228,20 +228,35 @@
                 <input type="number" id="itemAmount" placeholder="0.00 外幣金額">
             </div>
             <div class="row" style="align-items:center;">
-                <span style="font-size:13px; width:110px; color:#94a3b8;">邊個出面俾錢？</span>
+                <span style="font-size:13px; width:110px; color:#94a3b8;">誰人墊付？</span>
                 <select id="payerSelect"></select>
             </div>
             <div style="margin-bottom:12px;">
-                <span style="font-size:13px; display:block; margin-bottom:6px; color:#94a3b8;">邊個一齊夾？</span>
+                <span style="font-size:13px; display:block; margin-bottom:6px; color:#94a3b8;">誰一起分擔</span>
                 <div id="sharerCheckboxes" style="background-color:#0f172a; border:1px solid #334155; padding:10px; border-radius:8px; font-size:13px; display:flex; flex-wrap:wrap; gap:10px;"></div>
             </div>
-            <button type="button" id="submitExpenseBtn" style="width:100%; background-color: #6366f1; padding:12px;">記低呢筆開支</button>
+            <button type="button" id="submitExpenseBtn" style="width:100%; background-color: #6366f1; padding:12px;">儲存</button>
+        </div>
+    </div>
+
+    <div class="card">
+	
+
+        <div>
+            <h2>
+                <span>📋 4.開支歷史紀錄</span>
+                <span id="totalPool" style="background-color:#0f172a; color:#38bdf8; padding:2px 8px; border-radius:6px; font-size:12px; float:right;">總支出: 0</span>
+            </h2>
+            <div style="clear:both; height:8px;"></div>
+            <ul id="expenseList" class="list-box"></ul>
+        </div>
+		    <div id="payerSummary" style="background-color: #0f172a; padding: 10px; border-radius: 8px; font-size: 13px; color: #cbd5e1; margin-bottom: 10px; border: 1px solid #334155;">
         </div>
     </div>
 
     <div class="card">
 	<div>
-            <h2>📱 4. 結算目標貨幣</h2>
+            <h2>📱 5. 結算目標貨幣</h2>
             <select id="baseCurrencySelect">
                 <option value="HKD" selected>港幣 (HKD)</option>
                 <option value="USD">美金 (USD)</option>
@@ -253,17 +268,6 @@
                 <option value="TWD">台幣 (TWD)</option>
             </select>
         </div>
-        <div>
-            <h2>
-                <span>📋 5. 開支歷史紀錄</span>
-                <span id="totalPool" style="background-color:#0f172a; color:#38bdf8; padding:2px 8px; border-radius:6px; font-size:12px; float:right;">總支出: 0</span>
-            </h2>
-            <div style="clear:both; height:8px;"></div>
-            <ul id="expenseList" class="list-box"></ul>
-        </div>
-    </div>
-
-    <div class="card">
         <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h2 style="margin:0; border:none; padding:0;">📊 6. 終極結算 (家庭已合併)</h2>
@@ -610,8 +614,29 @@
 
         function updateUI() {
             var list = document.getElementById('expenseList');
+			var summaryEl = document.getElementById('payerSummary');
             list.innerHTML = '';
             var total = 0;
+			var payerTotals = {}; // 用於統計每人的墊付總額
+			
+			// 1. 計算總支出與統計個人墊付金額
+    expenses.forEach(function(exp) {
+        var amountInHKD = exp.amount * (exchangeRates[exp.currency] || 1.0);
+        var val = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
+        total += val;
+        
+        // 累加付款人金額
+        payerTotals[exp.payer] = (payerTotals[exp.payer] || 0) + val;
+    });
+	
+			// 2. 渲染付款總覽
+    if (Object.keys(payerTotals).length > 0) {
+        summaryEl.innerHTML = Object.keys(payerTotals).map(function(p) {
+            return `<div>✅ ${p} 已墊付: <strong>${payerTotals[p].toFixed(1)} ${baseCurrency}</strong></div>`;
+        }).join('');
+    } else {
+        summaryEl.innerHTML = "暫無開支統計";
+    }
 
             if(expenses.length === 0) {
                 list.innerHTML = '<li style="text-align:center;color:#475569;padding:15px 0;">未有開支紀錄</li>';
@@ -619,13 +644,10 @@
                 for(var i=0; i<expenses.length; i++) {
                     (function(idx){
                         var exp = expenses[idx];
-                        var amountInHKD = exp.amount * (exchangeRates[exp.currency] || 1.0);
-                        exp.amountInBase = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
-                        total += exp.amountInBase;
-
+                       
                         var li = document.createElement('li');
                         li.className = 'list-item';
-                        li.innerHTML = '<div style="flex:1;"><strong style="font-size:14px; color:#f1f5f9;">'+exp.name+'</strong><br><small style="color:#94a3b8;">由 '+exp.payer+' 付款，'+exp.sharers.join(',')+' 夾</small></div><div style="text-align:right; min-width:110px;"><span style="font-weight:700; color:#38bdf8; font-size:15px;">'+exp.amount+' '+exp.currency+'</span><br><small style="color:#64748b;">(~'+exp.amountInBase.toFixed(1)+' '+baseCurrency+')</small><div style="margin-top:4px;"><button type="button" class="edit-action" style="font-size:10px; padding:2px 6px; background-color:#334155; border-radius:4px; margin-right:4px;">改</button><button type="button" class="del-action" style="font-size:10px; padding:2px 6px; background-color:#334155; border-radius:4px; color:#f43f5e;">刪</button></div></div>';
+                        li.innerHTML = '<div style="flex:1;"><strong style="font-size:12px; color:#f1f5f9;">'+exp.name+'</strong><br><small style="color:#94a3b8;">由 '+exp.payer+' 付款，'+exp.sharers.join(',')+' 夾</small></div><div style="text-align:right; min-width:110px;"><span style="font-weight:700; color:#38bdf8; font-size:12px;">'+exp.amount+' '+exp.currency+'</span><br><small style="color:#64748b;">(~'+exp.amountInBase.toFixed(1)+' '+baseCurrency+')</small><div style="margin-top:4px;"><button type="button" class="edit-action" style="font-size:8px; padding:2px 6px; background-color:#334155; border-radius:4px; margin-right:4px;">改</button><button type="button" class="del-action" style="font-size:8px; padding:2px 6px; background-color:#334155; border-radius:4px; color:#f43f5e;">刪</button></div></div>';
                         
                         li.querySelector('.edit-action').onclick = function() { startEditExpense(idx); };
                         li.querySelector('.del-action').onclick = function() { deleteExpense(idx); };
@@ -633,7 +655,8 @@
                     })(i);
                 }
             }
-            document.getElementById('totalPool').innerText = "總支出: " + total.toFixed(1) + " " + baseCurrency;
+            document.getElementById('totalPool').innerText = "總支出: " + total.toFixed(1) + " " + baseCurrency
+			;
 
             var bal = {};
             for(var c=0; c<members.length; c++) bal[members[c]] = 0;
