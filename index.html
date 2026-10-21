@@ -389,7 +389,8 @@
 
         function changeBaseCurrency() {
             baseCurrency = document.getElementById('baseCurrencySelect').value;
-            try { localStorage.setItem('sf7_base', baseCurrency); } catch(e){}
+            activities[currentIdx].baseCurrency = baseCurrency; // 正確存入當前活動
+            saveAll(); // 執行全局存檔
             updateUI();
         }
 
@@ -613,30 +614,35 @@
         }
 
         function updateUI() {
+            // 確保每次更新 UI 都強制使用下拉選單最新的貨幣
+            baseCurrency = document.getElementById('baseCurrencySelect').value;
+            
             var list = document.getElementById('expenseList');
-			var summaryEl = document.getElementById('payerSummary');
+            var summaryEl = document.getElementById('payerSummary');
             list.innerHTML = '';
             var total = 0;
-			var payerTotals = {}; // 用於統計每人的墊付總額
-			
-			// 1. 計算總支出與統計個人墊付金額
-    expenses.forEach(function(exp) {
-        var amountInHKD = exp.amount * (exchangeRates[exp.currency] || 1.0);
-        var val = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
-        total += val;
-        
-        // 累加付款人金額
-        payerTotals[exp.payer] = (payerTotals[exp.payer] || 0) + val;
-    });
-	
-			// 2. 渲染付款總覽
-    if (Object.keys(payerTotals).length > 0) {
-        summaryEl.innerHTML = Object.keys(payerTotals).map(function(p) {
-            return `<div>✅ ${p} 已墊付: <strong>${payerTotals[p].toFixed(1)} ${baseCurrency}</strong></div>`;
-        }).join('');
-    } else {
-        summaryEl.innerHTML = "暫無開支統計";
-    }
+            var payerTotals = {}; 
+            
+            // 1. 計算總支出與統計個人墊付金額
+            expenses.forEach(function(exp) {
+                var amountInHKD = exp.amount * (exchangeRates[exp.currency] || 1.0);
+                var val = amountInHKD / (exchangeRates[baseCurrency] || 1.0);
+                
+                exp.amountInBase = val; // 👈 關鍵修正：必須更新這個值，第六部分的結算才會拿到最新匯率的數字！
+                total += val;
+                
+                // 累加付款人金額
+                payerTotals[exp.payer] = (payerTotals[exp.payer] || 0) + val;
+            });
+    
+            // 2. 渲染付款總覽
+            if (Object.keys(payerTotals).length > 0) {
+                summaryEl.innerHTML = Object.keys(payerTotals).map(function(p) {
+                    return `<div>✅ ${p} 已墊付: <strong>${payerTotals[p].toFixed(1)} ${baseCurrency}</strong></div>`;
+                }).join('');
+            } else {
+                summaryEl.innerHTML = "暫無開支統計";
+            }
 
             if(expenses.length === 0) {
                 list.innerHTML = '<li style="text-align:center;color:#475569;padding:15px 0;">未有開支紀錄</li>';
@@ -655,9 +661,9 @@
                     })(i);
                 }
             }
-            document.getElementById('totalPool').innerText = "總支出: " + total.toFixed(1) + " " + baseCurrency
-			;
+            document.getElementById('totalPool').innerText = "總支出: " + total.toFixed(1) + " " + baseCurrency;
 
+            // 3. 結算各人差額 (現在會拿到更新後的 amountInBase)
             var bal = {};
             for(var c=0; c<members.length; c++) bal[members[c]] = 0;
             for(var d=0; d<expenses.length; d++) {
